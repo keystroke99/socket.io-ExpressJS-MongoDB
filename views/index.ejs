@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/stylesheets/style.css" />
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+    <form onsubmit="return false" id="myForm">
+      <input
+        type="email"
+        placeholder="kumar@gamemarketinggenie.com"
+        ,
+        value="kumar@gamemarketinggenie.com"
+        id="email"
+      /><br />
+      <input
+        type="text"
+        placeholder="password"
+        value="123456aA"
+        id="password"
+      />
+      <button type="submit" onclick="submitForm()">Login</button>
+    </form>
+    <p id="dashboard" style="color: blue;"></p>
+    <p id="error" style="color: red;"></p>
+    <div id="socketArea" style="border: 1px solid black; display: none;"></div>
+    <script>
+      function submitForm(event) {
+        document.getElementById("dashboard").innerHTML = "";
+        document.getElementById("error").innerHTML = "";
+        let email = document.getElementById("email").value;
+        let password = document.getElementById("password").value;
+        return new Promise(async (resolve, reject) => {
+          await axios({
+            method: "post",
+            url: "/login",
+            data: {
+              email: email,
+              password: password,
+            },
+          })
+            .then((result) => {
+              if (result.data.error != undefined) {
+                document.getElementById(
+                  "error"
+                ).innerHTML = `${result.data.error}`;
+              } else {
+                document.getElementById(
+                  "dashboard"
+                ).innerHTML = `Welcome! : ${result.data.data.username}, email: ${result.data.data.email} `;
+                const token = result.data.data.token;
+                const socket = io.connect("http://localhost:3000", {
+                  query: {
+                    token: token,
+                    userId: result.data.data._id,
+                  },
+                });
+                socket.on("message", (data) => {
+                  console.log(data);
+                  console.log("==== ID ", socket.id);
+                  document.getElementById("socketArea").style.display = "block";
+                  document.getElementById(
+                    "socketArea"
+                  ).innerHTML += `<p>${data.message}</p>`;
+                });
+              }
+            })
+            .catch((error) => {
+              document.getElementById("error").innerHTML = `${error.message}`;
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
